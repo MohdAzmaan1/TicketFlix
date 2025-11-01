@@ -17,6 +17,20 @@ public class MailService {
 
     @Autowired
     JavaMailSender javaMailSender;
+    
+    // Simple mail sender method for Kafka consumer
+    public void sendSimpleMail(String to, String subject, String body) throws MessagingException {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true);
+        
+        mimeMessageHelper.setFrom("azmaan000@gmail.com");
+        mimeMessageHelper.setTo(to);
+        mimeMessageHelper.setText(body);
+        mimeMessageHelper.setSubject(subject);
+        
+        javaMailSender.send(mimeMessage);
+        log.info("Email sent successfully to: {}", to);
+    }
 
     public String sendMail(User user, Ticket ticket, String allottedSeats) throws MessagingException {
         String body = "Hi, " + user.getName() + "\n\nThis is to confirm your ticket booking for the movie:- " + ticket.getMovieName()

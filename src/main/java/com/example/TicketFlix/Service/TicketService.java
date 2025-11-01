@@ -2,6 +2,7 @@ package com.example.TicketFlix.Service;
 
 import com.example.TicketFlix.EntryDTOs.DeleteTicketEntryDTO;
 import com.example.TicketFlix.EntryDTOs.TicketEntryDTO;
+import com.example.TicketFlix.Kafka.KafkaProducerService;
 import com.example.TicketFlix.Models.Show;
 import com.example.TicketFlix.Models.ShowSeat;
 import com.example.TicketFlix.Models.Ticket;
@@ -39,6 +40,9 @@ public class TicketService {
 
     @Autowired
     RedisService redisService;
+
+    @Autowired
+    KafkaProducerService kafkaProducerService;
 
     public String addTicket(TicketEntryDTO ticketEntryDTO) throws InterruptedException, MessagingException {
         List<String> requestedSeatsToBook = ticketEntryDTO.getRequestedSeats();
@@ -115,7 +119,19 @@ public class TicketService {
             userRepository.save(user);
 
             redisService.increaseMovieCounter(ticket.getMovieName());
-            return mailService.sendMail(user, ticket, allottedSeats);
+            
+            // Publish ticket booking event to Kafka
+            kafkaProducerService.publishTicketBookingEvent(ticket, user);
+            
+            // Send email asynchronously via Kafka
+            String subject = "Confirmation for your ticket booking";
+            String body = "Hi, " + user.getName() + "\n\nThis is to confirm your ticket booking for the movie:- " + ticket.getMovieName()
+                    + "\nTicket id - " + ticket.getTicketId() + "\nBooked Seats - " + allottedSeats + "\nAmount of rupees - "
+                    + ticket.getTotalAmount() + "\n\n\n" + "Thank you for using our services, have a wonderful day!";
+            kafkaProducerService.publishEmailNotification(user.getEmail(), subject, body);
+            
+            log.info("Ticket booked successfully. Email notification sent via Kafka for ticket ID: {}", ticket.getTicketId());
+            return "Ticket is successfully booked. Confirmation email will be sent shortly.";
         }finally {
             if(allLocksAcquired){
                 for(int i=0;i< locks.size();i++){
@@ -192,7 +208,20 @@ public class TicketService {
 
         User user = ticket.getUser();
         redisService.decreaseCounter(ticket.getMovieName());
-        return mailService.cancelMail(user,ticket,cancelledSeats);
+        
+        // Publish ticket cancellation event to Kafka
+        kafkaProducerService.publishTicketCancellationEvent(ticket, user);
+        
+        // Send cancellation email asynchronously via Kafka
+        String subject = "Confirmation for your ticket cancellation";
+        String body = "Hi, " + user.getName() + "\n\nThis is to confirm your booking cancellation.\n"
+                + "Ticket id - " + ticket.getTicketId() + "\nCancelled Seats - " + cancelledSeats + "\n"
+                + "Amount of rupees - " + ticket.getTotalAmount() + " will be refunded in to your account in 6-7 working days"
+                + "\n\n\n" + "Have a wonderful day!";
+        kafkaProducerService.publishEmailNotification(user.getEmail(), subject, body);
+        
+        log.info("Ticket cancelled successfully. Email notification sent via Kafka for ticket ID: {}", ticket.getTicketId());
+        return "Tickets have been successfully cancelled. Confirmation email will be sent shortly.";
     }
 
     private void cancelBookingOfSeats(String [] currSeats, List<ShowSeat> showSeatList) {

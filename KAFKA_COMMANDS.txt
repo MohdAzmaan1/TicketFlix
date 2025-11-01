@@ -1,0 +1,57 @@
+KAFKA COMMANDS FOR REFERENCE
+==================================================
+
+# To start server
+bin\windows\kafka-server-start.bat config\kraft\server.properties
+
+
+# List all topics
+bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --list
+
+
+# Get detailed info about a specific topic
+bin\windows\kafka-topics.bat --describe --topic email-notification --bootstrap-server localhost:9092
+
+
+# Create a topic with custom settings
+bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --create --topic <topic-name> --partitions 1 --replication-factor 1
+
+
+# Delete a topic (requires delete.topic.enable=true in server.properties)
+bin\windows\kafka-topics.bat --delete --topic <topic-name> --bootstrap-server localhost:9092
+
+
+# Read messages from a topic
+bin\windows\kafka-console-consumer.bat --bootstrap-server localhost:9092 --topic <topic-name>
+
+
+# Send messages to a topic
+bin\windows\kafka-console-producer.bat --bootstrap-server localhost:9092 --topic <topic-name>
+
+
+# List all consumer groups
+bin\windows\kafka-consumer-groups.bat --bootstrap-server localhost:9092 --list
+
+
+# Describe a specific consumer group
+bin\windows\kafka-consumer-groups.bat --bootstrap-server localhost:9092 --describe --group <group-name>
+
+
+# Delete a Consumer Group
+bin\windows\kafka-consumer-groups.bat --bootstrap-server localhost:9092 --delete --group <group-name>
+
+
+# Reset consumer group offsets
+bin\windows\kafka-consumer-groups.bat --bootstrap-server localhost:9092 --group <group-name> --topic <topic-name> --reset-offsets --to-earliest --execute
+
+
+# Check topic offsets
+bin\windows\kafka-run-class.bat kafka.tools.GetOffsetShell --broker-list localhost:9092 --topic <topic-name>
+
+
+# Purge messages from a topic (delete data but keep topic)
+bin\windows\kafka-delete-records.bat --bootstrap-server localhost:9092 --offset-json-file delete.json
+
+
+
+

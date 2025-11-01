@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:mysql://sql12.freesqldatabase.com:3306/sql12804047?createTableIfNotExists=true
-    username: sql12804047
-    password: jhB2kcKm5E
+    url: jdbc:mysql://mysql-azmaan1311-20cb.i.aivencloud.com:24655/defaultdb?createTableIfNotExists=true
+    username: avnadmin
+    password: AVNS_NnBD7r1TJBwgRDYSU9J
   data:
     redis:
       host: redis-19994.crce206.ap-south-1-1.ec2.redns.redis-cloud.com
@@ -25,6 +25,18 @@ spring:
           auth: true
           starttls:
             enable: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: ticketflix-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 springdoc:
   api-docs:
