@@ -18,6 +18,8 @@ public class ShowEntryDTO {
     private int movieId;
 
     private int theaterId;
+    
+    private int screenId; // Required - show must be associated with a screen
 
     private int classSeatPrice;
 

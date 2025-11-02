@@ -26,6 +26,7 @@ public class Theater {
     @OneToMany(mappedBy = "theater", cascade = CascadeType.ALL)
     private List<Show> showList = new ArrayList<>();
 
+    // Theater has multiple screens
     @OneToMany(mappedBy = "theater", cascade = CascadeType.ALL)
-    private List<TheaterSeats> theaterSeatsList = new ArrayList<>();
+    private List<Screen> screenList = new ArrayList<>();
 }

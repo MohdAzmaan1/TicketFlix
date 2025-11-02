@@ -36,10 +36,15 @@ public class Show {
     @Enumerated(value = EnumType.STRING)
     private ShowType showType;
 
-    //Child wrt Theater
+    //Child wrt Theater (for backward compatibility and queries)
     @ManyToOne
     @JoinColumn
     private Theater theater;
+
+    //Show belongs to a Screen
+    @ManyToOne
+    @JoinColumn
+    private Screen screen;
 
     //Child wrt to Movie
     @ManyToOne

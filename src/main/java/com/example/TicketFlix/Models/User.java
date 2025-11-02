@@ -28,6 +28,24 @@ public class User {
 
     private String address;
 
+    // Authentication fields
+    @Column(nullable = false)
+    private String password; // Encrypted password
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private UserRole role = UserRole.USER; // Default role is USER
+
+    private boolean enabled = true; // Account enabled/disabled
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<Ticket> bookedTickets = new ArrayList<>();
+
+    public enum UserRole {
+        USER,       // Regular customer
+        ADMIN,      // System administrator
+        THEATER_OWNER  // Theater owner
+    }
 }

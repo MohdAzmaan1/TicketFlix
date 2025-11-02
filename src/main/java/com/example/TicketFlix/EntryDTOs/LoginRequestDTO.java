@@ -1,6 +1,5 @@
 package com.example.TicketFlix.EntryDTOs;
 
-import com.example.TicketFlix.Models.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,19 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserEntryDTO {
-
-    private String name;
-
-    private int age;
-
+public class LoginRequestDTO {
     private String email;
-
-    private String address;
-
-    private String mobileNumber;
-
     private String password;
-
-    private User.UserRole role;
 }
+
