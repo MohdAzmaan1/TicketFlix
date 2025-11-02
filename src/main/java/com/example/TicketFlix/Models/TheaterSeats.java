@@ -22,8 +22,8 @@ public class TheaterSeats {
     @Enumerated(value = EnumType.STRING)
     private SeatType seatType;
 
-
+    // Seat belongs to a Screen (not directly to Theater)
     @ManyToOne
     @JoinColumn
-    private Theater theater;
+    private Screen screen;
 }

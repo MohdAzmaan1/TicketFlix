@@ -44,3 +44,8 @@ springdoc:
   swagger-ui:
     enabled: true
     disable-swagger-default-url: true
+
+# JWT Configuration
+jwt:
+  secret: YourSecretKeyForJWTTokenGenerationMustBeAtLeast256BitsLongForHS512AlgorithmToWorkProperlyAndSecurely
+  expiration: 86400000 # 24 hours in milliseconds

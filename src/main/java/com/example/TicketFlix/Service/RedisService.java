@@ -17,10 +17,8 @@ public class RedisService {
 
     public void increaseMovieCounter(String movieName) {
         String key = MOVIE_BOOKING_KEY + movieName;
-        redisTemplate.opsForValue().increment(key);
-
         Long current = redisTemplate.opsForValue().increment(key);
-        redisTemplate.opsForZSet().add(TRENDING_MOVIE_KEY,movieName,current);
+        redisTemplate.opsForZSet().add(TRENDING_MOVIE_KEY, movieName, current);
     }
 
     public void decreaseCounter(String movieName) {
