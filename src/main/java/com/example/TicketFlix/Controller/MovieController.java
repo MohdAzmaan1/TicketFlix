@@ -1,16 +1,16 @@
 package com.example.TicketFlix.Controller;
 
 import com.example.TicketFlix.EntryDTOs.MovieEntryDTO;
+import com.example.TicketFlix.Response.ApiResponse;
+import com.example.TicketFlix.Response.ResponseFactory;
 import com.example.TicketFlix.Service.MovieService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+import java.util.*;
 
 @RestController
 @RequestMapping("/movies")
@@ -20,72 +20,102 @@ public class MovieController {
     MovieService movieService;
 
     @PostMapping("/add")
-    public ResponseEntity<String> addMovie(@RequestBody MovieEntryDTO movieEntryDTO){
+    public ResponseEntity<ApiResponse<Void>> addMovie(@RequestBody MovieEntryDTO movieEntryDTO, HttpServletRequest request){
         try{
-            String response = movieService.addMovie(movieEntryDTO);
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            String msg = movieService.addMovie(movieEntryDTO);
+            ApiResponse<Void> body = ResponseFactory.ack(msg, request);
+            return new ResponseEntity<>(body, HttpStatus.ACCEPTED);
         }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            ApiResponse<Void> body = ResponseFactory.failure(e.getMessage(), request);
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         }
     }
 
     @GetMapping("/get-all")
-    public ResponseEntity<List<MovieEntryDTO>> getAllMovies(){
+    public ResponseEntity<ApiResponse<List<MovieEntryDTO>>> getAllMovies(HttpServletRequest request){
         try{
             List<MovieEntryDTO> movies = movieService.getAllMovies();
-            return new ResponseEntity<>(movies, HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(movies, "Movies fetched successfully", request), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            ApiResponse<List<MovieEntryDTO>> body = ApiResponse.<List<MovieEntryDTO>>builder()
+                    .success(false)
+                    .message("Failed to fetch movies")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/get/{movieId}")
-    public ResponseEntity<MovieEntryDTO> getMovieById(@PathVariable int movieId){
+    public ResponseEntity<ApiResponse<MovieEntryDTO>> getMovieById(@PathVariable int movieId, HttpServletRequest request){
         try{
             MovieEntryDTO movie = movieService.getMovieById(movieId);
-            return new ResponseEntity<>(movie, HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(movie, "Movie fetched successfully", request), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            ApiResponse<MovieEntryDTO> body = ApiResponse.<MovieEntryDTO>builder()
+                    .success(false)
+                    .message("Movie not found")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 
     @PutMapping("/update/{movieId}")
-    public ResponseEntity<String> updateMovie(@PathVariable int movieId, @RequestBody MovieEntryDTO movieEntryDTO){
+    public ResponseEntity<ApiResponse<Void>> updateMovie(@PathVariable int movieId, @RequestBody MovieEntryDTO movieEntryDTO, HttpServletRequest request){
         try{
-            String response = movieService.updateMovie(movieId, movieEntryDTO);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            String msg = movieService.updateMovie(movieId, movieEntryDTO);
+            ApiResponse<Void> body = ResponseFactory.ack(msg, request);
+            return new ResponseEntity<>(body, HttpStatus.ACCEPTED);
         }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            ApiResponse<Void> body = ResponseFactory.failure(e.getMessage(), request);
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 
     @DeleteMapping("/delete/{movieId}")
-    public ResponseEntity<String> deleteMovie(@PathVariable int movieId){
+    public ResponseEntity<ApiResponse<Void>> deleteMovie(@PathVariable int movieId, HttpServletRequest request){
         try{
-            String response = movieService.deleteMovie(movieId);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            String msg = movieService.deleteMovie(movieId);
+            ApiResponse<Void> body = ResponseFactory.ack(msg, request);
+            return new ResponseEntity<>(body, HttpStatus.ACCEPTED);
         }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            ApiResponse<Void> body = ResponseFactory.failure(e.getMessage(), request);
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 
     @GetMapping("/trending")
-    public ResponseEntity<List<String>> getTrendingMovies(@RequestParam(defaultValue = "10") int limit){
+    public ResponseEntity<ApiResponse<List<String>>> getTrendingMovies(@RequestParam(defaultValue = "10") int limit, HttpServletRequest request){
         try {
             Set<String> trendingMovies = movieService.getTrendingMovies(limit);
-            return new ResponseEntity<>(new ArrayList<>(trendingMovies), HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(new ArrayList<>(trendingMovies), "Trending movies fetched", request), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            ApiResponse<List<String>> body = ApiResponse.<List<String>>builder()
+                    .success(false)
+                    .message("Failed to fetch trending movies")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/trending-with-counts")
-    public ResponseEntity<Map<String, Long>> getTrendingMoviesWithCounts(@RequestParam(defaultValue = "10") int limit) {
+    public ResponseEntity<ApiResponse<Map<String, Long>>> getTrendingMoviesWithCounts(@RequestParam(defaultValue = "10") int limit, HttpServletRequest request) {
         try {
             Map<String, Long> trendingMovies = movieService.getTrendingMoviesWithCounts(limit);
-            return new ResponseEntity<>(trendingMovies, HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(trendingMovies, "Trending movies with counts fetched", request), HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            ApiResponse<Map<String, Long>> body = ApiResponse.<Map<String, Long>>builder()
+                    .success(false)
+                    .message("Failed to fetch trending movies with counts")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

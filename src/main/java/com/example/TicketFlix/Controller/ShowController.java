@@ -1,12 +1,16 @@
 package com.example.TicketFlix.Controller;
 
 import com.example.TicketFlix.EntryDTOs.ShowEntryDTO;
+import com.example.TicketFlix.Response.ApiResponse;
+import com.example.TicketFlix.Response.ResponseFactory;
 import com.example.TicketFlix.Service.ShowService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -17,72 +21,102 @@ public class ShowController {
     ShowService showService;
 
     @PostMapping("/add")
-    public ResponseEntity<String> addShow(@RequestBody ShowEntryDTO showEntryDTO){
+    public ResponseEntity<ApiResponse<Void>> addShow(@RequestBody ShowEntryDTO showEntryDTO, HttpServletRequest request){
         try{
             String response = showService.addShow(showEntryDTO);
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
+            ApiResponse<Void> body = ResponseFactory.ack(response, request);
+            return new ResponseEntity<>(body, HttpStatus.ACCEPTED);
         }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            ApiResponse<Void> body = ResponseFactory.failure(e.getMessage(), request);
+            return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
         }
     }
 
     @GetMapping("/get-all")
-    public ResponseEntity<List<ShowEntryDTO>> getAllShows(){
+    public ResponseEntity<ApiResponse<List<ShowEntryDTO>>> getAllShows(HttpServletRequest request){
         try{
             List<ShowEntryDTO> shows = showService.getAllShows();
-            return new ResponseEntity<>(shows, HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(shows, "Shows fetched successfully", request), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            ApiResponse<List<ShowEntryDTO>> body = ApiResponse.<List<ShowEntryDTO>>builder()
+                    .success(false)
+                    .message("Failed to fetch shows")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/get/{showId}")
-    public ResponseEntity<ShowEntryDTO> getShowById(@PathVariable int showId){
+    public ResponseEntity<ApiResponse<ShowEntryDTO>> getShowById(@PathVariable int showId, HttpServletRequest request){
         try{
             ShowEntryDTO show = showService.getShowById(showId);
-            return new ResponseEntity<>(show, HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(show, "Show fetched successfully", request), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            ApiResponse<ShowEntryDTO> body = ApiResponse.<ShowEntryDTO>builder()
+                    .success(false)
+                    .message("Show not found")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 
     @GetMapping("/get-by-movie/{movieId}")
-    public ResponseEntity<List<ShowEntryDTO>> getShowsByMovie(@PathVariable int movieId){
+    public ResponseEntity<ApiResponse<List<ShowEntryDTO>>> getShowsByMovie(@PathVariable int movieId, HttpServletRequest request){
         try{
             List<ShowEntryDTO> shows = showService.getShowsByMovie(movieId);
-            return new ResponseEntity<>(shows, HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(shows, "Shows fetched successfully", request), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            ApiResponse<List<ShowEntryDTO>> body = ApiResponse.<List<ShowEntryDTO>>builder()
+                    .success(false)
+                    .message("Shows not found")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 
     @GetMapping("/get-by-theater/{theaterId}")
-    public ResponseEntity<List<ShowEntryDTO>> getShowsByTheater(@PathVariable int theaterId){
+    public ResponseEntity<ApiResponse<List<ShowEntryDTO>>> getShowsByTheater(@PathVariable int theaterId, HttpServletRequest request){
         try{
             List<ShowEntryDTO> shows = showService.getShowsByTheater(theaterId);
-            return new ResponseEntity<>(shows, HttpStatus.OK);
+            return new ResponseEntity<>(ResponseFactory.success(shows, "Shows fetched successfully", request), HttpStatus.OK);
         }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            ApiResponse<List<ShowEntryDTO>> body = ApiResponse.<List<ShowEntryDTO>>builder()
+                    .success(false)
+                    .message("Shows not found")
+                    .data(null)
+                    .path(request.getRequestURI())
+                    .build();
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 
     @PutMapping("/update/{showId}")
-    public ResponseEntity<String> updateShow(@PathVariable int showId, @RequestBody ShowEntryDTO showEntryDTO){
+    public ResponseEntity<ApiResponse<Void>> updateShow(@PathVariable int showId, @RequestBody ShowEntryDTO showEntryDTO, HttpServletRequest request){
         try{
             String response = showService.updateShow(showId, showEntryDTO);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            ApiResponse<Void> body = ResponseFactory.ack(response, request);
+            return new ResponseEntity<>(body, HttpStatus.ACCEPTED);
         }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            ApiResponse<Void> body = ResponseFactory.failure(e.getMessage(), request);
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 
     @DeleteMapping("/delete/{showId}")
-    public ResponseEntity<String> deleteShow(@PathVariable int showId){
+    public ResponseEntity<ApiResponse<Void>> deleteShow(@PathVariable int showId, HttpServletRequest request){
         try{
             String response = showService.deleteShow(showId);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            ApiResponse<Void> body = ResponseFactory.ack(response, request);
+            return new ResponseEntity<>(body, HttpStatus.ACCEPTED);
         }catch (Exception e){
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            ApiResponse<Void> body = ResponseFactory.failure(e.getMessage(), request);
+            return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
         }
     }
 }
