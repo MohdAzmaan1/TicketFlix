@@ -2,6 +2,7 @@ package com.example.TicketFlix.Filters;
 
 import com.example.TicketFlix.Service.CustomUserDetailsService;
 import com.example.TicketFlix.Service.JwtService;
+
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,7 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             try {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                if (jwtService.validateToken(jwt, email)) {
+                if (Boolean.TRUE.equals(jwtService.validateToken(jwt))) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

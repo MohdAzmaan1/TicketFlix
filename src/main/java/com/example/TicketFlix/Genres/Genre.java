@@ -4,5 +4,6 @@ public enum Genre {
     FICTIONAL,
     COMEDY,
     HORROR,
-    ADVENTURE
+    ADVENTURE,
+    ACTION
 }

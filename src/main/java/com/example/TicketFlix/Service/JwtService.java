@@ -9,49 +9,63 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * Improved JWT service with better security practices
+ */
 @Service
 @Slf4j
 public class JwtService {
 
-    @Value("${jwt.secret:YourSecretKeyForJWTTokenGenerationMustBeAtLeast256BitsLongForHS512Algorithm}")
-    private String secret;
+    @Value("${jwt.secret:}")
+    private String secretKey;
 
-    @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds
+    @Value("${jwt.expiration:86400000}") // 24 hours
     private Long expiration;
 
+    @Value("${jwt.refresh.expiration:604800000}") // 7 days
+    private Long refreshExpiration;
+
     private SecretKey getSigningKey() {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        // Ensure key is at least 64 bytes (512 bits) for HS512
-        if (keyBytes.length < 64) {
-            byte[] paddedKey = new byte[64];
-            System.arraycopy(keyBytes, 0, paddedKey, 0, keyBytes.length);
-            for (int i = keyBytes.length; i < 64; i++) {
-                paddedKey[i] = (byte) i;
-            }
-            return Keys.hmacShaKeyFor(paddedKey);
+        if (secretKey == null || secretKey.trim().isEmpty()) {
+            // Generate a secure random key if none provided
+            byte[] keyBytes = new byte[64]; // 512 bits
+            new SecureRandom().nextBytes(keyBytes);
+            secretKey = Base64.getEncoder().encodeToString(keyBytes);
+            log.warn("Generated random JWT secret key. This should be configured properly in production.");
         }
+        
+        byte[] keyBytes = Base64.getDecoder().decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String email, int userId, String role) {
+    public String generateAccessToken(String email, int userId, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("role", role);
-        return createToken(claims, email);
+        claims.put("type", "ACCESS");
+        return createToken(claims, email, expiration);
     }
 
-    private String createToken(Map<String, Object> claims, String subject) {
+    public String generateRefreshToken(String email, int userId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId);
+        claims.put("type", "REFRESH");
+        return createToken(claims, email, refreshExpiration);
+    }
+
+    private String createToken(Map<String, Object> claims, String subject, Long validity) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .setExpiration(new Date(System.currentTimeMillis() + validity))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
                 .compact();
     }
@@ -74,26 +88,35 @@ public class JwtService {
         return claims.get("role", String.class);
     }
 
+    public String extractTokenType(String token) {
+        Claims claims = extractAllClaims(token);
+        return claims.get("type", String.class);
+    }
+
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(getSigningKey())
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            log.error("Error parsing JWT token: {}", e.getMessage());
+            throw new SecurityException("Invalid JWT token", e);
+        }
     }
 
     private Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    public Boolean validateToken(String token, String email) {
-        final String tokenEmail = extractEmail(token);
-        return (tokenEmail.equals(email) && !isTokenExpired(token));
+        try {
+            return extractExpiration(token).before(new Date());
+        } catch (Exception e) {
+            return true; // Consider expired if we can't parse
+        }
     }
 
     public Boolean validateToken(String token) {
@@ -104,6 +127,34 @@ public class JwtService {
             return false;
         }
     }
+
+    public Boolean validateAccessToken(String token) {
+        try {
+            String tokenType = extractTokenType(token);
+            return "ACCESS".equals(tokenType) && !isTokenExpired(token);
+        } catch (Exception e) {
+            log.error("Error validating access token: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public Boolean validateRefreshToken(String token) {
+        try {
+            String tokenType = extractTokenType(token);
+            return "REFRESH".equals(tokenType) && !isTokenExpired(token);
+        } catch (Exception e) {
+            log.error("Error validating refresh token: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public Boolean validateToken(String token, String email) {
+        try {
+            final String tokenEmail = extractEmail(token);
+            return (tokenEmail.equals(email) && !isTokenExpired(token));
+        } catch (Exception e) {
+            log.error("Error validating token for email {}: {}", email, e.getMessage());
+            return false;
+        }
+    }
 }
-
-

@@ -11,12 +11,12 @@ public class MovieConvertor {
     }
 
     public static MovieEntryDTO convertEntityToDto(Movie movie){
-        MovieEntryDTO movieEntryDTO = new MovieEntryDTO();
-        movieEntryDTO.setMovieName(movie.getMovieName());
-        movieEntryDTO.setGenre(movie.getGenre());
-        movieEntryDTO.setLanguage(movie.getLanguage());
-        movieEntryDTO.setDuration(movie.getDuration());
-        movieEntryDTO.setRating(movie.getRating());
-        return movieEntryDTO;
+        return MovieEntryDTO.builder()
+                .movieName(movie.getMovieName())
+                .genre(movie.getGenre())
+                .language(movie.getLanguage())
+                .duration(movie.getDuration())
+                .rating(movie.getRating())
+                .build();
     }
 }
