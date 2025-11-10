@@ -2,13 +2,18 @@ package com.example.TicketFlix.Service;
 
 import com.example.TicketFlix.EntryDTOs.LoginRequestDTO;
 import com.example.TicketFlix.EntryDTOs.UserEntryDTO;
+import com.example.TicketFlix.Exception.AuthenticationException;
+import com.example.TicketFlix.Exception.BusinessException;
+import com.example.TicketFlix.Exception.ValidationException;
 import com.example.TicketFlix.Models.User;
 import com.example.TicketFlix.Repository.UserRepository;
 import com.example.TicketFlix.Response.AuthResponseDTO;
+import com.example.TicketFlix.Validation.PasswordValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 
@@ -25,26 +30,26 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private PasswordValidator passwordValidator;
+
     /**
      * Register a new user
      */
-    public AuthResponseDTO register(UserEntryDTO userEntryDTO) throws Exception {
+    public AuthResponseDTO register(UserEntryDTO userEntryDTO) throws ValidationException, BusinessException {
+        // Validate input
+        validateUserRegistrationInput(userEntryDTO);
+
         // Validate email uniqueness
-        if (userEntryDTO.getEmail() != null) {
+        if (StringUtils.hasText(userEntryDTO.getEmail())) {
             Optional<User> existingUser = userRepository.findByEmail(userEntryDTO.getEmail());
             if (existingUser.isPresent()) {
-                throw new Exception("User with email " + userEntryDTO.getEmail() + " already exists");
+                throw new BusinessException("User with email " + userEntryDTO.getEmail() + " already exists");
             }
         }
 
-        // Validate password
-        if (userEntryDTO.getPassword() == null || userEntryDTO.getPassword().isEmpty()) {
-            throw new Exception("Password is required");
-        }
-
-        if (userEntryDTO.getPassword().length() < 6) {
-            throw new Exception("Password must be at least 6 characters long");
-        }
+        // Validate password strength
+        passwordValidator.validatePassword(userEntryDTO.getPassword());
 
         // Create user with encrypted password
         User user = User.builder()
@@ -61,7 +66,7 @@ public class AuthService {
         user = userRepository.save(user);
 
         // Generate JWT token
-        String token = jwtService.generateToken(user.getEmail(), user.getId(), user.getRole().name());
+        String token = jwtService.generateAccessToken(user.getEmail(), user.getId(), user.getRole().name());
 
         log.info("User registered successfully: {}", user.getEmail());
 
@@ -78,27 +83,30 @@ public class AuthService {
     /**
      * Authenticate user and generate token
      */
-    public AuthResponseDTO login(LoginRequestDTO loginRequestDTO) throws Exception {
+    public AuthResponseDTO login(LoginRequestDTO loginRequestDTO) throws ValidationException, AuthenticationException {
+        // Validate input
+        validateLoginInput(loginRequestDTO);
+
         // Find user by email
         Optional<User> userOptional = userRepository.findByEmail(loginRequestDTO.getEmail());
         if (userOptional.isEmpty()) {
-            throw new Exception("Invalid email or password");
+            throw AuthenticationException.invalidCredentials();
         }
 
         User user = userOptional.get();
 
         // Check if account is enabled
         if (!user.isEnabled()) {
-            throw new Exception("Account is disabled. Please contact administrator");
+            throw AuthenticationException.accountDisabled();
         }
 
         // Verify password
         if (!passwordEncoder.matches(loginRequestDTO.getPassword(), user.getPassword())) {
-            throw new Exception("Invalid email or password");
+            throw AuthenticationException.invalidCredentials();
         }
 
         // Generate JWT token
-        String token = jwtService.generateToken(user.getEmail(), user.getId(), user.getRole().name());
+        String token = jwtService.generateAccessToken(user.getEmail(), user.getId(), user.getRole().name());
 
         log.info("User logged in successfully: {}", user.getEmail());
 
@@ -140,6 +148,71 @@ public class AuthService {
      */
     public PasswordEncoder getPasswordEncoder() {
         return passwordEncoder;
+    }
+
+    /**
+     * Validate user registration input
+     */
+    private void validateUserRegistrationInput(UserEntryDTO userEntryDTO) throws ValidationException {
+        if (userEntryDTO == null) {
+            throw new ValidationException("User data is required");
+        }
+
+        if (!StringUtils.hasText(userEntryDTO.getName())) {
+            throw new ValidationException("name", "Name is required");
+        }
+
+        if (!StringUtils.hasText(userEntryDTO.getEmail())) {
+            throw new ValidationException("email", "Email is required");
+        }
+
+        if (!isValidEmail(userEntryDTO.getEmail())) {
+            throw new ValidationException("email", "Invalid email format");
+        }
+
+        if (StringUtils.hasText(userEntryDTO.getMobileNumber()) && !isValidMobileNumber(userEntryDTO.getMobileNumber())) {
+            throw new ValidationException("mobileNumber", "Invalid mobile number format");
+        }
+    }
+
+    /**
+     * Validate login input
+     */
+    private void validateLoginInput(LoginRequestDTO loginRequestDTO) throws ValidationException {
+        if (loginRequestDTO == null) {
+            throw new ValidationException("Login data is required");
+        }
+
+        if (!StringUtils.hasText(loginRequestDTO.getEmail())) {
+            throw new ValidationException("email", "Email is required");
+        }
+
+        if (!StringUtils.hasText(loginRequestDTO.getPassword())) {
+            throw new ValidationException("password", "Password is required");
+        }
+    }
+
+    /**
+     * Validate email format
+     */
+    private boolean isValidEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            return false;
+        }
+        return email.matches("^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$");
+    }
+
+    /**
+     * Validate mobile number format
+     */
+    private boolean isValidMobileNumber(String mobileNumber) {
+        if (!StringUtils.hasText(mobileNumber)) {
+            return false;
+        }
+        // Remove spaces, hyphens, and plus signs
+        String cleanNumber = mobileNumber.replaceAll("[\\s\\-\\+]", "");
+        // Check if it's 10-15 digits
+        return cleanNumber.matches("^\\d{10,15}$");
     }
 }
 

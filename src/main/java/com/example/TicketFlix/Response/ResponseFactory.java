@@ -1,10 +1,7 @@
 package com.example.TicketFlix.Response;
 
 import javax.servlet.http.HttpServletRequest;
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class ResponseFactory {
@@ -16,7 +13,7 @@ public class ResponseFactory {
                 .data(data)
                 .requestId(UUID.randomUUID().toString())
                 .path(request != null ? request.getRequestURI() : null)
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 
@@ -26,7 +23,7 @@ public class ResponseFactory {
                 .message(message)
                 .requestId(UUID.randomUUID().toString())
                 .path(request != null ? request.getRequestURI() : null)
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 
@@ -36,7 +33,7 @@ public class ResponseFactory {
                 .message(message)
                 .requestId(UUID.randomUUID().toString())
                 .path(request != null ? request.getRequestURI() : null)
-                .timestamp(Instant.now())
+                .timestamp(LocalDateTime.now())
                 .build();
     }
 }

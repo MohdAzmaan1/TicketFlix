@@ -81,7 +81,7 @@ public class TicketController {
     @GetMapping("/get-by-ticket-id/{ticketId}")
     public ResponseEntity<ApiResponse<TicketResponseDTO>> getTicketByTicketId(@PathVariable String ticketId, HttpServletRequest request){
         try{
-            TicketResponseDTO ticket = ticketService.getTicketByTicketId(ticketId);
+            TicketResponseDTO ticket = ticketService.getTicketById(Integer.parseInt(ticketId));
             return new ResponseEntity<>(ResponseFactory.success(ticket, "Ticket fetched successfully", request), HttpStatus.OK);
         }catch (Exception e){
             ApiResponse<TicketResponseDTO> body = ApiResponse.<TicketResponseDTO>builder()
